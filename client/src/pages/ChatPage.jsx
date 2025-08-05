@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import ChatBubble from "../components/ChatBubble";
 import { sendMessageToChatbot } from "../api/chatApi";
-import "./ChatPage.css"; // 👈 스타일 import
+import "./ChatPage.css";
 
 const ChatPage = () => {
   const [input, setInput] = useState("");
   const [chatLog, setChatLog] = useState([]);
+  const [loading, setLoading] = useState(false);
   const chatContainerRef = useRef(null);
 
   useEffect(() => {
@@ -20,6 +21,7 @@ const ChatPage = () => {
     const currentMessage = input;
     setChatLog((prev) => [...prev, { sender: "user", text: currentMessage }]);
     setInput("");
+    setLoading(true);
 
     try {
       const reply = await sendMessageToChatbot(currentMessage);
@@ -27,12 +29,14 @@ const ChatPage = () => {
     } catch (error) {
       setChatLog((prev) => [...prev, { sender: "bot", text: "서버 오류가 발생했습니다." }]);
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    sendMessage();
+    if (!loading) sendMessage();
   };
 
   return (
@@ -42,11 +46,20 @@ const ChatPage = () => {
         {chatLog.map((chat, idx) => (
           <ChatBubble key={idx} sender={chat.sender} text={chat.text} />
         ))}
+        {loading && (
+          <div className="chat-bubble-container">
+            <span className="chat-bubble typing">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </span>
+          </div>
+        )}
       </div>
       <form onSubmit={handleSubmit}>
-        <input type="text" value={input} placeholder="메시지를 입력하세요..." onChange={(e) => setInput(e.target.value)} className="chat-input" />
-        <button type="submit" className="chat-send-button">
-          send
+        <input type="text" value={input} placeholder="메시지를 입력하세요..." onChange={(e) => setInput(e.target.value)} className="chat-input" disabled={loading} />
+        <button type="submit" className="chat-send-button" disabled={loading}>
+          SEND
         </button>
       </form>
     </div>
